@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>4DTRIS - 4D Tetris Game</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>
+                <span class="logo-line">__      ___         ________  ___     __   _____</span>
+                <span class="logo-line">/ /__   / _ \  ____ /__   __/\/ _ \   /_/\ / ___/\</span>
+                <span class="logo-line">/_  _/\ / // /\/___/\\_/  /\_\/ _  /\ / /\/_\__ \\/</span>
+                <span class="logo-line">\/_/\\//____/ /\___\/ /__/ / /_//_/\//_/ //_____/\</span>
+                <span class="logo-line">\_\/  \____\/        \__\/  \_\\_\/ \_\/ \_____\/</span>
+            </h1>
+            <p class="subtitle">A Tetris Game Extended to 4 Dimensions</p>
+        </header>
+
+        <div id="main-content">
+            <div id="game-area">
+                <canvas id="game-canvas"></canvas>
+                <div id="game-overlay" class="hidden">
+                    <div id="start-screen">
+                        <h2>Welcome to 4DTRIS!</h2>
+                        <p>A challenging puzzle game in four dimensions</p>
+                        <button id="start-button" class="btn-primary">Start Game</button>
+                        <button id="help-button" class="btn-secondary">How to Play</button>
+                    </div>
+                    <div id="pause-screen" class="hidden">
+                        <h2>Paused</h2>
+                        <button id="resume-button" class="btn-primary">Resume</button>
+                        <button id="restart-button" class="btn-secondary">Restart</button>
+                    </div>
+                    <div id="gameover-screen" class="hidden">
+                        <h2>Game Over</h2>
+                        <p id="final-score">Score: 0</p>
+                        <button id="play-again-button" class="btn-primary">Play Again</button>
+                    </div>
+                </div>
+            </div>
+
+            <aside id="game-info">
+                <div class="info-section">
+                    <h3>Score</h3>
+                    <div id="score" class="info-value">0</div>
+                </div>
+                <div class="info-section">
+                    <h3>Level</h3>
+                    <div id="level" class="info-value">1</div>
+                </div>
+                <div class="info-section">
+                    <h3>Lines</h3>
+                    <div id="lines" class="info-value">0</div>
+                </div>
+                <div class="info-section">
+                    <h3>Next Piece</h3>
+                    <canvas id="next-piece-canvas" width="150" height="150"></canvas>
+                </div>
+                <div class="info-section">
+                    <h3>Controls</h3>
+                    <div class="controls-list">
+                        <div class="control-item">
+                            <span class="key">Arrow Keys</span>
+                            <span class="desc">Move X/Y</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">W/S</span>
+                            <span class="desc">Move Z</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">A/D</span>
+                            <span class="desc">Move W</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">Q/E</span>
+                            <span class="desc">Rotate XY</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">Z/X</span>
+                            <span class="desc">Rotate XZ</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">C/V</span>
+                            <span class="desc">Rotate XW</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">R/F</span>
+                            <span class="desc">Rotate YZ</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">T/G</span>
+                            <span class="desc">Rotate YW</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">Y/H</span>
+                            <span class="desc">Rotate ZW</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">Space</span>
+                            <span class="desc">Drop</span>
+                        </div>
+                        <div class="control-item">
+                            <span class="key">P</span>
+                            <span class="desc">Pause</span>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <div id="help-modal" class="modal hidden">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>How to Play 4D Tetris</h2>
+                
+                <h3>What is 4D Tetris?</h3>
+                <p>4DTRIS extends traditional Tetris into four spatial dimensions. Instead of pieces falling on a 2D plane, they fall through a 4D space (X, Y, Z, W axes) and are visualized as 3D projections.</p>
+                
+                <h3>Game Objective</h3>
+                <p>Clear complete 3D "hyperplanes" by filling all positions at a given W-level. When a hyperplane is complete, it clears, and you earn points.</p>
+                
+                <h3>The 4D Space</h3>
+                <p>The game board is a 2×2×2×2 hypercube (extending to 12 levels in the W direction). Think of it as multiple 3D layers stacked in the 4th dimension.</p>
+                
+                <h3>Pieces (Tetrominos)</h3>
+                <p>There are 6 types of 4D pieces, ranging from 1 to 4 blocks:</p>
+                <ul>
+                    <li><strong>Dot</strong> (1 block): Single hypercube</li>
+                    <li><strong>Line</strong> (2 blocks): Two connected hypercubes</li>
+                    <li><strong>Corner</strong> (3 blocks): L-shaped configuration</li>
+                    <li><strong>Tetracube</strong> (4 blocks): Various 4-block arrangements</li>
+                </ul>
+                
+                <h3>4D Rotations</h3>
+                <p>In 4D, there are 6 planes of rotation (compared to 1 in 2D Tetris):</p>
+                <ul>
+                    <li><strong>XY, XZ, YZ:</strong> Traditional 3D rotations</li>
+                    <li><strong>XW, YW, ZW:</strong> Rotations involving the 4th dimension</li>
+                </ul>
+                
+                <h3>Visualization</h3>
+                <p>The 4D game space is projected into 3D for display. Different W-positions are shown with varying transparency and colors to help you visualize depth in the 4th dimension.</p>
+                
+                <h3>Tips for Success</h3>
+                <ul>
+                    <li>Start slowly and understand how pieces move in 4D space</li>
+                    <li>Pay attention to the W-axis (4th dimension) position</li>
+                    <li>Experiment with different rotation planes</li>
+                    <li>Try to clear multiple hyperplanes at once for bonus points</li>
+                </ul>
+                
+                <button id="close-help" class="btn-primary">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
