@@ -220,8 +220,20 @@ The web version uses modern ES6+ JavaScript with ES modules. To develop:
 
 The code uses:
 - **ES6 Modules** for clean code organization
-- **Three.js** (via CDN) for 3D rendering
+- **Canvas 2D API** for 3D visualization (isometric projection)
 - **No build step required** - runs directly in the browser
+
+### GitHub Pages Setup
+
+The web version is configured to be deployed via GitHub Pages from the `docs/` folder:
+
+1. Go to repository Settings → Pages
+2. Under "Source", select "Deploy from a branch"
+3. Select the main branch and `/docs` folder
+4. Save and wait for deployment (usually 1-2 minutes)
+5. The game will be available at `https://polkadotsprite.github.io/4dtris/`
+
+The `.nojekyll` file ensures GitHub Pages doesn't process the site with Jekyll.
 
 ### Desktop Version Development
 
