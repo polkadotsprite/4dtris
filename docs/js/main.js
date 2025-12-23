@@ -3,7 +3,7 @@
  */
 
 import { GameEngine } from './engine.js';
-import { GameRenderer } from './renderer.js';
+import { GameRenderer } from './renderer-canvas2d.js';
 import { Matrix4D, Vector4D } from './math4d.js';
 
 class Game {

@@ -171,18 +171,19 @@ export class GameEngine {
             const z = Math.round(block.z);
             const w = Math.round(block.w);
 
-            // Check boundaries
-            if (x < -1 || x >= 1 || 
-                y < -1 || y >= 1 || 
-                z < -1 || z >= 1 || 
+            // Check boundaries - game space is 2x2x2, positions 0 to 1 in X,Y,Z
+            // Valid rounded positions are 0 and 1
+            if (x < 0 || x > 1 || 
+                y < 0 || y > 1 || 
+                z < 0 || z > 1 || 
                 w < 0 || w >= WSIZE) {
                 return true;
             }
 
-            // Convert to array indices (offset by 1 for negative coordinates)
-            const xi = x + 1;
-            const yi = y + 1;
-            const zi = z + 1;
+            // Array indices are directly the rounded positions (0 or 1)
+            const xi = x;
+            const yi = y;
+            const zi = z;
 
             if (xi < 0 || xi >= XSIZE ||
                 yi < 0 || yi >= YSIZE ||
@@ -256,9 +257,9 @@ export class GameEngine {
         const color = this.currentPiece.type.color;
 
         for (const block of blocks) {
-            const x = Math.round(block.x) + 1;
-            const y = Math.round(block.y) + 1;
-            const z = Math.round(block.z) + 1;
+            const x = Math.round(block.x);
+            const y = Math.round(block.y);
+            const z = Math.round(block.z);
             const w = Math.round(block.w);
 
             if (w >= 0 && w < WSIZE &&
@@ -345,7 +346,7 @@ export class GameEngine {
                     for (let z = 0; z < ZSIZE; z++) {
                         if (this.space[w][x][y][z] !== 0) {
                             blocks.push({
-                                position: new Vector4D(x - 1, y - 1, z - 1, w),
+                                position: new Vector4D(x, y, z, w),
                                 color: this.space[w][x][y][z]
                             });
                         }
