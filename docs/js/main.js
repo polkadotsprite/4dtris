@@ -98,7 +98,7 @@ class Game {
                     this.engine.movePiece(new Vector4D(0, 0, 0, 1));
                     break;
 
-                // Rotation controls
+                // Rotation controls (all 6 planes)
                 case 'q':
                     this.engine.rotatePiece(Matrix4D.rotationXY(rotationAmount));
                     break;
@@ -116,6 +116,24 @@ class Game {
                     break;
                 case 'v':
                     this.engine.rotatePiece(Matrix4D.rotationXW(-rotationAmount));
+                    break;
+                case 'r':
+                    this.engine.rotatePiece(Matrix4D.rotationYZ(rotationAmount));
+                    break;
+                case 'f':
+                    this.engine.rotatePiece(Matrix4D.rotationYZ(-rotationAmount));
+                    break;
+                case 't':
+                    this.engine.rotatePiece(Matrix4D.rotationYW(rotationAmount));
+                    break;
+                case 'g':
+                    this.engine.rotatePiece(Matrix4D.rotationYW(-rotationAmount));
+                    break;
+                case 'y':
+                    this.engine.rotatePiece(Matrix4D.rotationZW(rotationAmount));
+                    break;
+                case 'h':
+                    this.engine.rotatePiece(Matrix4D.rotationZW(-rotationAmount));
                     break;
 
                 // Drop piece

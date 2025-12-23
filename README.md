@@ -39,13 +39,13 @@ The web version features:
 
 ### ✨ Modern Features
 - **Browser-based gameplay** - No installation needed
-- **WebGL/Three.js rendering** - Beautiful 3D visualization with lighting and effects
+- **Canvas 2D rendering** - Isometric 3D visualization with smooth animations
 - **Responsive design** - Works on desktop and mobile devices
 - **Intuitive controls** - Keyboard support for all 4D movements and rotations
 - **Real-time scoring** - Track score, level, and lines cleared
 - **Next piece preview** - Plan your strategy
 - **Help system** - Built-in tutorial explaining 4D concepts
-- **Particle effects** - Satisfying visual feedback for line clears
+- **Visual effects** - Color/opacity gradients to visualize the 4th dimension
 
 ### 🎮 How to Play (Web Version)
 
@@ -140,11 +140,11 @@ The web implementation consists of:
    - Line clearing for complete hyperplanes
    - Scoring and level progression
 
-3. **renderer.js** - Three.js visualization
-   - 3D projection of 4D game space
-   - Lighting and materials
-   - Smooth animations
-   - Particle effects
+3. **renderer.js** - Canvas 2D visualization
+   - 4D to 3D projection with perspective
+   - Isometric rendering style
+   - Smooth camera rotation animations
+   - W-axis visualization indicators
 
 4. **main.js** - Game controller
    - UI management
@@ -189,7 +189,7 @@ Each rotation is a 90° turn in the specified plane.
 │   └── js/
 │       ├── main.js      # Game controller
 │       ├── engine.js    # Game logic
-│       ├── renderer.js  # Three.js renderer
+│       ├── renderer.js  # Canvas 2D renderer
 │       └── math4d.js    # 4D math library
 ├── doc/                 # Documentation
 │   └── concept/         # Design documents
@@ -283,8 +283,7 @@ Possible enhancements:
 ## 🌟 Acknowledgments
 
 - Thanks to the original author Simon Laszlo for creating this unique 4D puzzle game
-- Three.js team for the excellent 3D library
-- The mathematics community for 4D geometry research
+- The mathematics community for 4D geometry research and projection algorithms
 
 ---
 
