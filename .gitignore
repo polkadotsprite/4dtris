@@ -1,0 +1,30 @@
+# Build artifacts
+obj/
+*.o
+*.so
+*.a
+Debug/
+Release/
+
+# Generated executables
+src/4dtris
+4dtris
+
+# IDE files
+.cproject
+.project
+.settings/
+.vscode/
+.idea/
+
+# Documentation
+doc/doxygen/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Web build artifacts (if using bundler in future)
+docs/dist/
+node_modules/
+package-lock.json
