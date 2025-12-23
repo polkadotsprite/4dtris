@@ -1,297 +1,295 @@
 /**
- * 4D Tetris Renderer
- * Uses Three.js to render the 4D game space projected to 3D
+ * 4D Tetris Renderer - Canvas 2D Fallback
+ * Renders the 4D game space projected to 3D using Canvas 2D API
  */
 
-import * as THREE from 'three';
 import { project4Dto3D, getOpacityFromW } from './math4d.js';
 
 export class GameRenderer {
     constructor(canvas) {
         this.canvas = canvas;
-        this.scene = new THREE.Scene();
-        
-        // Setup camera
-        this.camera = new THREE.PerspectiveCamera(
-            75,
-            canvas.width / canvas.height,
-            0.1,
-            1000
-        );
-        this.camera.position.set(5, 5, 5);
-        this.camera.lookAt(0, 0, 0);
-
-        // Setup renderer
-        this.renderer = new THREE.WebGLRenderer({ 
-            canvas: canvas,
-            antialias: true,
-            alpha: true
-        });
-        this.renderer.setSize(canvas.width, canvas.height);
-        this.renderer.setClearColor(0x0a0a1a, 1);
-
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-        this.scene.add(ambientLight);
-
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(5, 10, 7);
-        this.scene.add(directionalLight);
-
-        // Add a subtle point light that moves
-        this.pointLight = new THREE.PointLight(0x00d4ff, 1, 20);
-        this.pointLight.position.set(0, 3, 3);
-        this.scene.add(this.pointLight);
-
-        // Create grid helper for reference
-        this.createGrid();
-
-        // Animation time for effects
+        this.ctx = canvas.getContext('2d');
         this.time = 0;
-
-        // Particle system for line clears
-        this.particles = [];
-    }
-
-    createGrid() {
-        // Create a 3D grid to show the play area
-        const gridHelper = new THREE.GridHelper(4, 4, 0x00d4ff, 0x1a1a2e);
-        gridHelper.position.y = -2;
-        this.scene.add(gridHelper);
-
-        // Create wireframe box to show boundaries
-        const boxGeometry = new THREE.BoxGeometry(4, 4, 4);
-        const boxEdges = new THREE.EdgesGeometry(boxGeometry);
-        const boxLines = new THREE.LineSegments(
-            boxEdges,
-            new THREE.LineBasicMaterial({ color: 0x2a2a3e, transparent: true, opacity: 0.3 })
-        );
-        this.scene.add(boxLines);
+        this.rotation = 0;
     }
 
     render(engine) {
         // Update time for animations
         this.time += 0.016;
+        this.rotation += 0.005;
 
-        // Animate camera rotation slowly
-        const cameraAngle = this.time * 0.1;
-        const cameraRadius = 8;
-        this.camera.position.x = Math.cos(cameraAngle) * cameraRadius;
-        this.camera.position.z = Math.sin(cameraAngle) * cameraRadius;
-        this.camera.position.y = 5 + Math.sin(this.time * 0.3) * 0.5;
-        this.camera.lookAt(0, 0, 0);
+        // Clear canvas
+        this.ctx.fillStyle = '#0a0a1a';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Animate point light
-        this.pointLight.position.x = Math.cos(this.time * 0.7) * 3;
-        this.pointLight.position.z = Math.sin(this.time * 0.7) * 3;
+        // Set up coordinate system (center of canvas)
+        const centerX = this.canvas.width / 2;
+        const centerY = this.canvas.height / 2;
+        const scale = 60; // Scale factor for rendering
 
-        // Clear previous blocks
-        this.clearBlocks();
+        // Draw grid
+        this.drawGrid(centerX, centerY, scale);
 
-        // Render locked blocks
-        const blocks = engine.getAllBlocks();
-        blocks.forEach(block => {
-            this.renderBlock(block.position, block.color);
+        // Collect all blocks to render with depth sorting
+        const allBlocks = [];
+
+        // Add locked blocks
+        const lockedBlocks = engine.getAllBlocks();
+        lockedBlocks.forEach(block => {
+            allBlocks.push({
+                position: block.position,
+                color: block.color,
+                isActive: false
+            });
         });
 
-        // Render current piece
+        // Add current piece blocks
         if (engine.currentPiece && !engine.gameOver) {
             const pieceBlocks = engine.currentPiece.getWorldBlocks();
             const color = engine.currentPiece.type.color;
             pieceBlocks.forEach(block => {
-                this.renderBlock(block, color, true);
+                allBlocks.push({
+                    position: block,
+                    color: color,
+                    isActive: true
+                });
             });
         }
 
-        // Update particles
-        this.updateParticles();
+        // Sort blocks by depth (Z + W) for proper rendering
+        allBlocks.sort((a, b) => {
+            const depthA = a.position.z + a.position.w * 0.5;
+            const depthB = b.position.z + b.position.w * 0.5;
+            return depthA - depthB;
+        });
 
-        // Render scene
-        this.renderer.render(this.scene, this.camera);
+        // Render all blocks
+        allBlocks.forEach(block => {
+            this.drawBlock(
+                block.position,
+                block.color,
+                block.isActive,
+                centerX,
+                centerY,
+                scale
+            );
+        });
+
+        // Draw UI indicators
+        this.drawWAxisIndicator(centerX, centerY, scale);
     }
 
-    clearBlocks() {
-        // Remove all block meshes from scene
-        const toRemove = [];
-        this.scene.children.forEach(child => {
-            if (child.userData.isBlock) {
-                toRemove.push(child);
+    drawGrid(centerX, centerY, scale) {
+        this.ctx.strokeStyle = 'rgba(42, 42, 62, 0.3)';
+        this.ctx.lineWidth = 1;
+
+        // Draw XY grid
+        for (let x = -2; x <= 2; x++) {
+            for (let y = -2; y <= 2; y++) {
+                const pos1 = this.rotateAndProject({ x: x, y: y, z: -2, w: 0 }, scale);
+                const pos2 = this.rotateAndProject({ x: x, y: y, z: 2, w: 0 }, scale);
+                
+                this.ctx.beginPath();
+                this.ctx.moveTo(centerX + pos1.x, centerY - pos1.y);
+                this.ctx.lineTo(centerX + pos2.x, centerY - pos2.y);
+                this.ctx.stroke();
             }
-        });
-        toRemove.forEach(obj => {
-            if (obj.geometry) obj.geometry.dispose();
-            if (obj.material) obj.material.dispose();
-            this.scene.remove(obj);
+        }
+
+        // Draw game area boundary
+        this.ctx.strokeStyle = 'rgba(0, 212, 255, 0.5)';
+        this.ctx.lineWidth = 2;
+        
+        const corners = [
+            [-1, -1, -1], [1, -1, -1], [1, 1, -1], [-1, 1, -1],
+            [-1, -1, 1], [1, -1, 1], [1, 1, 1], [-1, 1, 1]
+        ];
+
+        // Draw cube edges
+        const edges = [
+            [0, 1], [1, 2], [2, 3], [3, 0],
+            [4, 5], [5, 6], [6, 7], [7, 4],
+            [0, 4], [1, 5], [2, 6], [3, 7]
+        ];
+
+        edges.forEach(([i, j]) => {
+            const p1 = this.rotateAndProject(
+                { x: corners[i][0], y: corners[i][1], z: corners[i][2], w: 0 },
+                scale
+            );
+            const p2 = this.rotateAndProject(
+                { x: corners[j][0], y: corners[j][1], z: corners[j][2], w: 0 },
+                scale
+            );
+
+            this.ctx.beginPath();
+            this.ctx.moveTo(centerX + p1.x, centerY - p1.y);
+            this.ctx.lineTo(centerX + p2.x, centerY - p2.y);
+            this.ctx.stroke();
         });
     }
 
-    renderBlock(position4D, color, isActive = false) {
-        // Project 4D position to 3D
+    drawBlock(position4D, color, isActive, centerX, centerY, scale) {
+        // Project 4D to 3D
         const pos3D = project4Dto3D(position4D, 3);
         
-        // Create block mesh
-        const geometry = new THREE.BoxGeometry(0.9, 0.9, 0.9);
+        // Apply rotation
+        const pos = this.rotateAndProject(pos3D, scale);
         
         // Calculate opacity based on W position
         const opacity = getOpacityFromW(position4D.w, 12);
         
-        // Add slight glow for active piece
-        const emissive = isActive ? 0.3 : 0.1;
-        
-        const material = new THREE.MeshStandardMaterial({
-            color: color,
-            transparent: true,
-            opacity: opacity,
-            emissive: color,
-            emissiveIntensity: emissive,
-            metalness: 0.5,
-            roughness: 0.5
-        });
+        // Block size with perspective
+        const size = scale * 0.8;
+        const depth = pos.z;
+        const perspectiveScale = 1 / (1 + depth * 0.1);
+        const finalSize = size * perspectiveScale;
 
-        const mesh = new THREE.Mesh(geometry, material);
-        mesh.position.set(pos3D.x * 2, pos3D.y * 2, pos3D.z * 2);
-        mesh.userData.isBlock = true;
-        
-        // Add slight pulsing effect to active piece
+        // Convert hex color to RGB
+        const r = (color >> 16) & 255;
+        const g = (color >> 8) & 255;
+        const b = color & 255;
+
+        // Add glow effect for active piece
         if (isActive) {
-            const scale = 1 + Math.sin(this.time * 5) * 0.05;
-            mesh.scale.set(scale, scale, scale);
+            const glowIntensity = 0.5 + Math.sin(this.time * 5) * 0.3;
+            this.ctx.shadowBlur = 20 * glowIntensity;
+            this.ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        } else {
+            this.ctx.shadowBlur = 5;
+            this.ctx.shadowColor = `rgba(${r}, ${g}, ${b}, ${opacity * 0.5})`;
         }
 
-        this.scene.add(mesh);
+        // Draw block as cube with perspective
+        const x = centerX + pos.x;
+        const y = centerY - pos.y;
+
+        // Main face
+        this.ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${opacity})`;
+        this.ctx.fillRect(
+            x - finalSize / 2,
+            y - finalSize / 2,
+            finalSize,
+            finalSize
+        );
+
+        // Top face (lighter)
+        this.ctx.fillStyle = `rgba(${Math.min(r + 50, 255)}, ${Math.min(g + 50, 255)}, ${Math.min(b + 50, 255)}, ${opacity * 0.8})`;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - finalSize / 2, y - finalSize / 2);
+        this.ctx.lineTo(x, y - finalSize / 2 - finalSize * 0.3);
+        this.ctx.lineTo(x + finalSize / 2, y - finalSize / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Right face (darker)
+        this.ctx.fillStyle = `rgba(${Math.max(r - 50, 0)}, ${Math.max(g - 50, 0)}, ${Math.max(b - 50, 0)}, ${opacity * 0.6})`;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + finalSize / 2, y - finalSize / 2);
+        this.ctx.lineTo(x + finalSize / 2 + finalSize * 0.3, y);
+        this.ctx.lineTo(x + finalSize / 2 + finalSize * 0.3, y + finalSize / 2);
+        this.ctx.lineTo(x + finalSize / 2, y + finalSize / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Outline
+        this.ctx.strokeStyle = `rgba(${Math.min(r + 80, 255)}, ${Math.min(g + 80, 255)}, ${Math.min(b + 80, 255)}, ${opacity})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(
+            x - finalSize / 2,
+            y - finalSize / 2,
+            finalSize,
+            finalSize
+        );
+
+        // Reset shadow
+        this.ctx.shadowBlur = 0;
     }
 
-    createLineClearEffect(wLevel) {
-        // Create particle explosion effect for line clear
-        const particleCount = 50;
+    rotateAndProject(pos3D, scale) {
+        // Simple rotation around Y axis for visual effect
+        const cos = Math.cos(this.rotation);
+        const sin = Math.sin(this.rotation);
         
-        for (let i = 0; i < particleCount; i++) {
-            const particle = {
-                position: new THREE.Vector3(
-                    (Math.random() - 0.5) * 4,
-                    (Math.random() - 0.5) * 4,
-                    (Math.random() - 0.5) * 4
-                ),
-                velocity: new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.2,
-                    (Math.random() - 0.5) * 0.2,
-                    (Math.random() - 0.5) * 0.2
-                ),
-                life: 1.0,
-                color: new THREE.Color().setHSL(Math.random(), 0.8, 0.6)
-            };
+        const x = pos3D.x * cos - pos3D.z * sin;
+        const z = pos3D.x * sin + pos3D.z * cos;
+        const y = pos3D.y;
 
-            const geometry = new THREE.SphereGeometry(0.1, 8, 8);
-            const material = new THREE.MeshBasicMaterial({
-                color: particle.color,
-                transparent: true,
-                opacity: 1
-            });
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.position.copy(particle.position);
-            
-            particle.mesh = mesh;
-            this.particles.push(particle);
-            this.scene.add(mesh);
-        }
+        // Isometric-style projection
+        const projX = (x - z) * scale;
+        const projY = (y * 1.5 + (x + z) * 0.5) * scale;
+
+        return { x: projX, y: projY, z: z };
     }
 
-    updateParticles() {
-        const toRemove = [];
-        
-        this.particles.forEach(particle => {
-            particle.life -= 0.02;
-            
-            if (particle.life <= 0) {
-                toRemove.push(particle);
-                return;
-            }
+    drawWAxisIndicator(centerX, centerY, scale) {
+        // Draw W-axis indicator in corner
+        const x = 50;
+        const y = this.canvas.height - 50;
 
-            particle.position.add(particle.velocity);
-            particle.velocity.y -= 0.01; // Gravity
-            particle.mesh.position.copy(particle.position);
-            particle.mesh.material.opacity = particle.life;
-        });
+        this.ctx.font = '14px monospace';
+        this.ctx.fillStyle = '#00d4ff';
+        this.ctx.fillText('W-Axis', x - 20, y - 30);
 
-        // Remove dead particles
-        toRemove.forEach(particle => {
-            this.scene.remove(particle.mesh);
-            particle.mesh.geometry.dispose();
-            particle.mesh.material.dispose();
-            const index = this.particles.indexOf(particle);
-            if (index > -1) {
-                this.particles.splice(index, 1);
-            }
-        });
+        // Draw gradient bar for W visualization
+        const gradient = this.ctx.createLinearGradient(x, y, x + 100, y);
+        gradient.addColorStop(0, 'rgba(0, 100, 255, 0.5)');
+        gradient.addColorStop(1, 'rgba(255, 0, 255, 0.9)');
+
+        this.ctx.fillStyle = gradient;
+        this.ctx.fillRect(x, y, 100, 15);
+
+        this.ctx.strokeStyle = '#00d4ff';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(x, y, 100, 15);
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.font = '10px monospace';
+        this.ctx.fillText('W=0', x - 5, y + 30);
+        this.ctx.fillText('W=12', x + 80, y + 30);
     }
 
     renderNextPiece(piece, canvas) {
-        // Create separate scene for next piece preview
-        const previewScene = new THREE.Scene();
-        const previewCamera = new THREE.PerspectiveCamera(
-            50,
-            canvas.width / canvas.height,
-            0.1,
-            100
-        );
-        previewCamera.position.set(3, 3, 3);
-        previewCamera.lookAt(0, 0, 0);
+        const ctx = canvas.getContext('2d');
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const scale = 25;
 
-        // Lighting for preview
-        const light = new THREE.AmbientLight(0xffffff, 0.6);
-        previewScene.add(light);
-        const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        dirLight.position.set(2, 3, 2);
-        previewScene.add(dirLight);
+        // Clear canvas
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Create renderer for preview if needed
-        if (!this.previewRenderer) {
-            this.previewRenderer = new THREE.WebGLRenderer({ 
-                canvas: canvas,
-                antialias: true,
-                alpha: true
-            });
-            this.previewRenderer.setSize(canvas.width, canvas.height);
-            this.previewRenderer.setClearColor(0x0a0a1a, 1);
-        }
+        if (!piece) return;
 
         // Render piece blocks
-        if (piece) {
-            piece.blocks.forEach(block => {
-                const pos3D = project4Dto3D(block, 2);
-                const geometry = new THREE.BoxGeometry(0.4, 0.4, 0.4);
-                const material = new THREE.MeshStandardMaterial({
-                    color: piece.type.color,
-                    emissive: piece.type.color,
-                    emissiveIntensity: 0.3,
-                    metalness: 0.5,
-                    roughness: 0.5
-                });
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(pos3D.x, pos3D.y, pos3D.z);
-                previewScene.add(mesh);
-            });
-        }
+        piece.blocks.forEach(block => {
+            const pos3D = project4Dto3D(block, 2);
+            const pos = this.rotateAndProject(pos3D, scale);
+            
+            const r = (piece.type.color >> 16) & 255;
+            const g = (piece.type.color >> 8) & 255;
+            const b = piece.type.color & 255;
 
-        this.previewRenderer.render(previewScene, previewCamera);
+            const size = scale * 0.7;
+            const x = centerX + pos.x;
+            const y = centerY - pos.y;
 
-        // Clean up
-        previewScene.children.forEach(child => {
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) child.material.dispose();
+            // Draw block
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+            ctx.fillRect(x - size / 2, y - size / 2, size, size);
+
+            ctx.strokeStyle = `rgb(${Math.min(r + 80, 255)}, ${Math.min(g + 80, 255)}, ${Math.min(b + 80, 255)})`;
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x - size / 2, y - size / 2, size, size);
         });
     }
 
     resize(width, height) {
-        this.camera.aspect = width / height;
-        this.camera.updateProjectionMatrix();
-        this.renderer.setSize(width, height);
+        this.canvas.width = width;
+        this.canvas.height = height;
     }
 
     dispose() {
-        this.renderer.dispose();
-        if (this.previewRenderer) {
-            this.previewRenderer.dispose();
-        }
+        // Nothing to dispose for 2D canvas
     }
 }

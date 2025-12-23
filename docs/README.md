@@ -36,7 +36,7 @@ Then open `http://localhost:8000` in your browser.
 - `js/` - JavaScript modules
   - `main.js` - Game controller
   - `engine.js` - Game logic
-  - `renderer-canvas2d.js` - Canvas 2D renderer
+  - `renderer.js` - Canvas 2D renderer
   - `math4d.js` - 4D math library
 - `assets/` - Images and other assets (if any)
 - `.nojekyll` - Tells GitHub Pages not to process with Jekyll
